@@ -1,10 +1,9 @@
 // Project Management Service
 // Handles all project-related business logic
 
-import { DatabaseRepository } from "../../../utils/database/repository.tsx";
-import { Project, CreateProjectRequest } from "../../../utils/database/models.tsx";
-import { AuthService } from "./auth-service.tsx";
-import { AvalancheService } from "../../../utils/blockchain/avalanche-service.tsx";
+import { DatabaseRepository } from "../repository.ts";
+import { Project, CreateProjectRequest } from "../models.ts";
+import { AuthService } from "./auth-service.ts";
 
 export class ProjectService {
   private authService: AuthService;
@@ -17,16 +16,7 @@ export class ProjectService {
     const projectId = DatabaseRepository.generateId('project');
     
     try {
-      // Register project on Avalanche blockchain
-      const blockchainRegistration = await AvalancheService.registerProject({
-        id: projectId,
-        name: projectData.name,
-        location: projectData.location,
-        ecosystemType: projectData.ecosystemType,
-        area: projectData.area,
-        managerId: managerId
-      });
-
+      // Create project (blockchain integration temporarily disabled for deployment)
       const project: Project = {
         id: projectId,
         ...projectData,
@@ -35,34 +25,17 @@ export class ProjectService {
         managerEmail: managerInfo.email || 'N/A',
         status: 'registered',
         createdAt: new Date().toISOString(),
-        onChainTxHash: blockchainRegistration.registrationTx.txHash
+        onChainTxHash: `0x${Math.random().toString(16).substr(2, 64)}` // Simulated hash
       };
 
       await DatabaseRepository.createProject(project);
       
-      console.log(`✅ Project ${projectId} created and registered on blockchain: ${blockchainRegistration.registrationTx.txHash}`);
+      console.log(`✅ Project ${projectId} created successfully`);
       
       return { projectId, project };
     } catch (error) {
-      console.error('❌ Failed to register project on blockchain:', error);
-      
-      // Fallback: create project without blockchain registration
-      const project: Project = {
-        id: projectId,
-        ...projectData,
-        managerId: managerId,
-        managerName: managerInfo.user_metadata?.name || 'Unknown Manager',
-        managerEmail: managerInfo.email || 'N/A',
-        status: 'registered',
-        createdAt: new Date().toISOString(),
-        onChainTxHash: undefined
-      };
-
-      await DatabaseRepository.createProject(project);
-      
-      console.log(`⚠️ Project ${projectId} created without blockchain registration due to error`);
-      
-      return { projectId, project };
+      console.error('❌ Failed to create project:', error);
+      throw error;
     }
   }
 

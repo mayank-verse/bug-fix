@@ -178,6 +178,23 @@ export class ApiService {
   }
 
   // Carbon Credits APIs
+  static async getOwnedCredits(): Promise<CreditsListResponse> {
+    const response = await fetch(`${this.baseUrl}/credits/owned`, {
+      method: 'GET',
+      headers: await this.getAuthHeaders()
+    });
+    return this.handleResponse(response);
+  }
+
+  static async purchaseCredit(creditId: string): Promise<{ success: boolean; message: string; creditId: string }> {
+    const response = await fetch(`${this.baseUrl}/credits/purchase`, {
+      method: 'POST',
+      headers: await this.getAuthHeaders(),
+      body: JSON.stringify({ creditId })
+    });
+    return this.handleResponse(response);
+  }
+
   static async getAvailableCredits(): Promise<CreditsListResponse> {
     const response = await fetch(`${this.baseUrl}/credits/available`, {
       method: 'GET',
@@ -186,7 +203,7 @@ export class ApiService {
     return this.handleResponse(response);
   }
 
-  static async retireCredits(retirement: RetireCreditRequest): Promise<{ retirementId: string; retirement: any }> {
+  static async retireCredits(retirement: RetireCreditRequest): Promise<{ success: boolean; message: string; retirement: any }> {
     const response = await fetch(`${this.baseUrl}/credits/retire`, {
       method: 'POST',
       headers: await this.getAuthHeaders(),

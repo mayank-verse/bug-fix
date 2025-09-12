@@ -77,14 +77,17 @@ export interface MLVerification {
 export interface CarbonCredit {
   id: string;
   projectId: string;
-  carbonCredits: number;
+  amount: number;
+  ownerId?: string; // User who owns this credit
+  isRetired: boolean;
+  retiredBy?: string;
+  retiredAt?: string;
+  retirementReason?: string;
   healthScore: number;
   evidenceCid: string;
   verifiedAt: string;
-  status: 'available' | 'retired';
-  totalIssued: number;
-  totalRetired: number;
-  availableAmount: number;
+  mrvId: string;
+  onChainTxHash?: string;
 }
 
 export interface CreditRetirement {
@@ -95,6 +98,15 @@ export interface CreditRetirement {
   reason: string;
   retiredAt: string;
   onChainTxHash: string;
+}
+
+export interface CreditPurchase {
+  id: string;
+  creditId: string;
+  buyerId: string;
+  amount: number;
+  purchasedAt: string;
+  onChainTxHash?: string;
 }
 
 export interface PublicStats {

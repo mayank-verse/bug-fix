@@ -2,9 +2,8 @@
 // Handles Monitoring, Reporting, and Verification data processing
 
 import { createClient } from "npm:@supabase/supabase-js";
-import { DatabaseRepository } from "../../../utils/database/repository.tsx";
-import { MRVData, CreateMRVRequest, UploadedFile } from "../../../utils/database/models.tsx";
-import { AvalancheService } from "../../../utils/blockchain/avalanche-service.tsx";
+import { DatabaseRepository } from "../repository.ts";
+import { MRVData, CreateMRVRequest, UploadedFile, CarbonCredit } from "../models.ts";
 
 export class MRVService {
   private supabase: any;
@@ -141,38 +140,64 @@ export class MRVService {
 
     if (approved && existingMRV.mlResults) {
       try {
-        // Issue carbon credits on Avalanche blockchain
-        const creditIssuance = await AvalancheService.issueCarbonCredits({
-          projectId: existingMRV.projectId,
-          carbonAmount: existingMRV.mlResults.carbon_estimate,
-          verificationData: {
-            mrvId,
-            verifierId,
-            verificationNotes: notes,
-            mlResults: existingMRV.mlResults,
-            approvedAt: new Date().toISOString()
-          }
-        });
-
         // Update total credits issued
         await DatabaseRepository.incrementCreditsIssued(existingMRV.mlResults.carbon_estimate);
 
-        // Store blockchain transaction hash
-        updatedMrv.onChainTxHash = creditIssuance.verificationTx.txHash;
+        // Generate blockchain transaction hash (simulated for now)
+        updatedMrv.onChainTxHash = DatabaseRepository.generateTxHash();
         
-        console.log(`✅ Carbon credits issued on blockchain for MRV ${mrvId}: ${creditIssuance.verificationTx.txHash}`);
-      } catch (blockchainError) {
-        console.error('❌ Failed to issue credits on blockchain:', blockchainError);
+        // Create carbon credit record with proper tracking
+        const creditId = DatabaseRepository.generateId('credit');
+        const carbonCredit: CarbonCredit = {
+          id: creditId,
+          projectId: existingMRV.projectId,
+          amount: existingMRV.mlResults.carbon_estimate,
+          ownerId: undefined, // Available for purchase
+          isRetired: false,
+          healthScore: existingMRV.mlResults.biomass_health_score,
+          evidenceCid: existingMRV.mlResults.evidenceCid,
+          verifiedAt: new Date().toISOString(),
+          mrvId: mrvId,
+          onChainTxHash: updatedMrv.onChainTxHash
+        };
+        
+        await DatabaseRepository.createCarbonCredit(carbonCredit);
+        
+        console.log(`✅ Carbon credits issued for MRV ${mrvId}: ${existingMRV.mlResults.carbon_estimate} tCO₂e`);
+      } catch (error) {
+        console.error('❌ Failed to issue credits:', error);
         
         // Fallback: update credits without blockchain transaction
         await DatabaseRepository.incrementCreditsIssued(existingMRV.mlResults.carbon_estimate);
-        updatedMrv.onChainTxHash = DatabaseRepository.generateTxHash(); // Fallback hash
+        updatedMrv.onChainTxHash = DatabaseRepository.generateTxHash();
+        
+        // Create carbon credit record even without blockchain
+        const creditId = DatabaseRepository.generateId('credit');
+        const carbonCredit: CarbonCredit = {
+          id: creditId,
+          projectId: existingMRV.projectId,
+          amount: existingMRV.mlResults.carbon_estimate,
+          ownerId: undefined,
+          isRetired: false,
+          healthScore: existingMRV.mlResults.biomass_health_score,
+          evidenceCid: existingMRV.mlResults.evidenceCid,
+          verifiedAt: new Date().toISOString(),
+          mrvId: mrvId,
+          onChainTxHash: updatedMrv.onChainTxHash
+        };
+        
+        await DatabaseRepository.createCarbonCredit(carbonCredit);
         
         console.log(`⚠️ Credits issued without blockchain transaction for MRV ${mrvId}`);
       }
     }
 
     await DatabaseRepository.updateMRVData(mrvId, updatedMrv);
+    
+    // Update project status based on approval
+    const newProjectStatus = approved ? 'approved' : 'rejected';
+    await DatabaseRepository.updateProject(existingMRV.projectId, { status: newProjectStatus });
+    
     return updatedMrv;
   }
 

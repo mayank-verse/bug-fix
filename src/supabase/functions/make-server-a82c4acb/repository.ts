@@ -1,15 +1,16 @@
 // Database Repository Layer
 // Handles all data access operations using the KV store
 
-import * as kv from './kv_store.tsx';
+import * as kv from './kv_store.ts';
 import { 
   Project, 
   MRVData, 
   MLVerification, 
   CreditRetirement, 
   PublicStats,
-  User 
-} from './models.tsx';
+  User,
+  CarbonCredit
+} from './models.ts';
 
 export class DatabaseRepository {
   // Project operations
@@ -74,6 +75,78 @@ export class DatabaseRepository {
     if (existing) {
       await kv.set(mrvId, { ...existing, ...updates });
     }
+  }
+
+  // Carbon Credit operations
+  static async createCarbonCredit(credit: CarbonCredit): Promise<void> {
+    await kv.set(`credit_${credit.id}`, credit);
+  }
+
+  static async getCarbonCredit(creditId: string): Promise<CarbonCredit | null> {
+    const result = await kv.get(`credit_${creditId}`);
+    return result?.value || null;
+  }
+
+  static async updateCarbonCredit(creditId: string, updates: Partial<CarbonCredit>): Promise<void> {
+    const existing = await this.getCarbonCredit(creditId);
+    if (existing) {
+      await kv.set(`credit_${creditId}`, { ...existing, ...updates });
+    }
+  }
+
+  static async getAvailableCredits(): Promise<CarbonCredit[]> {
+    const allCredits = await kv.getByPrefix('credit_');
+    return allCredits
+      .map(c => c.value)
+      .filter(credit => !credit.isRetired && !credit.ownerId);
+  }
+
+  static async getBuyerCredits(buyerId: string): Promise<CarbonCredit[]> {
+    const allCredits = await kv.getByPrefix('credit_');
+    return allCredits
+      .map(c => c.value)
+      .filter(credit => credit.ownerId === buyerId && !credit.isRetired);
+  }
+
+  static async retireCredit(creditId: string, buyerId: string, reason: string): Promise<void> {
+    const credit = await this.getCarbonCredit(creditId);
+    if (!credit) {
+      throw new Error('Credit not found');
+    }
+    
+    if (credit.ownerId !== buyerId) {
+      throw new Error('Access denied: You can only retire credits you own');
+    }
+    
+    if (credit.isRetired) {
+      throw new Error('Credit has already been retired');
+    }
+    
+    await this.updateCarbonCredit(creditId, {
+      isRetired: true,
+      retiredBy: buyerId,
+      retiredAt: new Date().toISOString(),
+      retirementReason: reason
+    });
+  }
+
+  static async purchaseCredit(creditId: string, buyerId: string): Promise<void> {
+    const credit = await this.getCarbonCredit(creditId);
+    if (!credit) {
+      throw new Error('Credit not found');
+    }
+    
+    if (credit.ownerId) {
+      throw new Error('Credit has already been purchased');
+    }
+    
+    if (credit.isRetired) {
+      throw new Error('Credit has been retired and is no longer available');
+    }
+    
+    await this.updateCarbonCredit(creditId, {
+      ownerId: buyerId
+    });
   }
 
   // ML Verification operations

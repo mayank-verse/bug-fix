@@ -15,7 +15,7 @@ export interface Project {
   name: string;
   description: string;
   location: string;
-  ecosystemType: string;
+  ecosystemType: 'mangrove' | 'saltmarsh' | 'seagrass' | 'coastal_wetland';
   area: number;
   coordinates?: string;
   communityPartners?: string;
@@ -28,92 +28,66 @@ export interface Project {
   onChainTxHash?: string;
 }
 
-export interface CreateProjectRequest {
-  name: string;
-  description: string;
-  location: string;
-  ecosystemType: string;
-  area: number;
-  coordinates?: string;
-  communityPartners?: string;
-  expectedCarbonCapture?: number;
-}
-
 export interface MRVData {
   id: string;
   projectId: string;
-  submittedBy: string;
+  managerId: string;
   rawData: {
-    satelliteData?: string;
-    communityReports?: string;
-    sensorReadings?: string;
-    iotData?: string;
-    notes?: string;
+    satelliteData: string;
+    communityReports: string;
+    sensorReadings: string;
+    iotData: string;
+    notes: string;
   };
   files: UploadedFile[];
   status: 'pending_ml_processing' | 'pending_verification' | 'approved' | 'rejected';
   submittedAt: string;
+  verificationNotes?: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
   mlResults?: {
     carbon_estimate: number;
     biomass_health_score: number;
     evidenceCid: string;
   };
-  verificationNotes?: string;
-  verifiedBy?: string;
-  verifiedAt?: string;
   onChainTxHash?: string;
 }
 
-export interface CreateMRVRequest {
-  projectId: string;
-  rawData: {
-    satelliteData?: string;
-    communityReports?: string;
-    sensorReadings?: string;
-    iotData?: string;
-    notes?: string;
-  };
-  files: UploadedFile[];
-}
-
 export interface UploadedFile {
-  id: string;
-  fileName: string;
-  fileSize: number;
-  fileType: string;
-  uploadPath: string;
-  signedUrl: string;
-  uploadedAt: string;
+  name: string;
+  originalName: string;
+  size: number;
+  type: string;
   category: 'photo' | 'iot_data' | 'document';
+  path: string;
+  url?: string;
+  uploadedAt: string;
 }
 
 export interface MLVerification {
-  id: string;
   projectId: string;
-  verifierId: string;
-  riskScore: number;
+  mlScore: number;
   confidence: number;
   riskFactors: string[];
   recommendation: string;
-  detailedAnalysis: {
-    locationAnalysis: any;
-    ecosystemAnalysis: any;
-    scalabilityAnalysis: any;
-    dataQualityAssessment: any;
-  };
-  verifiedAt: string;
-  modelVersion: string;
+  timestamp: string;
+  verifierId: string;
 }
 
 export interface CarbonCredit {
   id: string;
   projectId: string;
   amount: number;
-  verificationTxHash: string;
-  issuedAt: string;
+  ownerId?: string; // User who owns this credit
   isRetired: boolean;
-  retiredAt?: string;
   retiredBy?: string;
+  retiredAt?: string;
+  retirementReason?: string;
+  healthScore: number;
+  evidenceCid: string;
+  verifiedAt: string;
+  mrvId: string;
+  onChainTxHash?: string;
 }
 
 export interface CreditRetirement {
@@ -126,6 +100,15 @@ export interface CreditRetirement {
   onChainTxHash: string;
 }
 
+export interface CreditPurchase {
+  id: string;
+  creditId: string;
+  buyerId: string;
+  amount: number;
+  purchasedAt: string;
+  onChainTxHash?: string;
+}
+
 export interface PublicStats {
   totalCreditsIssued: number;
   totalCreditsRetired: number;
@@ -133,12 +116,28 @@ export interface PublicStats {
   projects: Project[];
 }
 
-// API Request/Response Types
-export interface SignupRequest {
-  email: string;
-  password: string;
+// Form interfaces for create/update operations
+export interface CreateProjectRequest {
   name: string;
-  role: string;
+  description: string;
+  location: string;
+  ecosystemType: 'mangrove' | 'saltmarsh' | 'seagrass' | 'coastal_wetland';
+  area: number;
+  coordinates?: string;
+  communityPartners?: string;
+  expectedCarbonCapture?: number;
+}
+
+export interface CreateMRVRequest {
+  projectId: string;
+  rawData: {
+    satelliteData: string;
+    communityReports: string;
+    sensorReadings: string;
+    iotData: string;
+    notes: string;
+  };
+  files: UploadedFile[];
 }
 
 export interface ApprovalRequest {
@@ -148,8 +147,14 @@ export interface ApprovalRequest {
 
 export interface RetireCreditRequest {
   creditId: string;
-  amount: number;
   reason: string;
+}
+
+export interface SignupRequest {
+  email: string;
+  password: string;
+  name: string;
+  role: 'project_manager' | 'nccr_verifier' | 'buyer';
 }
 
 export interface MLVerificationRequest {
@@ -157,11 +162,12 @@ export interface MLVerificationRequest {
   projectData: Project;
 }
 
-// API Response Types
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
+// API Response interfaces
+export interface ApiResponse<T> {
+  success?: boolean;
   error?: string;
+  message?: string;
+  data?: T;
 }
 
 export interface ProjectListResponse {
@@ -182,4 +188,5 @@ export interface MLVerificationResponse {
 
 export interface FileUploadResponse {
   files: UploadedFile[];
+  message: string;
 }

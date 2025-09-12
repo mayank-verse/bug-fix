@@ -27,10 +27,13 @@ interface User {
 interface CarbonCredit {
   id: string;
   projectId: string;
-  carbonCredits: number;
+  amount: number;
+  ownerId?: string;
+  isRetired: boolean;
   healthScore: number;
   evidenceCid: string;
   verifiedAt: string;
+  mrvId: string;
 }
 
 interface Retirement {
@@ -40,7 +43,7 @@ interface Retirement {
   amount: number;
   reason: string;
   retiredAt: string;
-  onChainTxHash: string;
+  onChainTxHash?: string;
 }
 
 interface BuyerDashboardProps {
@@ -49,19 +52,17 @@ interface BuyerDashboardProps {
 
 export function BuyerDashboard({ user }: BuyerDashboardProps) {
   const [availableCredits, setAvailableCredits] = useState<CarbonCredit[]>([]);
+  const [ownedCredits, setOwnedCredits] = useState<CarbonCredit[]>([]);
   const [selectedCredit, setSelectedCredit] = useState<CarbonCredit | null>(null);
   const [loading, setLoading] = useState(true);
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
   const [showRetirementDialog, setShowRetirementDialog] = useState(false);
-  const [purchaseAmount, setPurchaseAmount] = useState(0);
   const [retirementReason, setRetirementReason] = useState('');
-  const [userBalance, setUserBalance] = useState(0);
   const [retirements, setRetirements] = useState<Retirement[]>([]);
 
   useEffect(() => {
     fetchAvailableCredits();
-    // In a real implementation, you would fetch user's token balance from blockchain
-    setUserBalance(Math.floor(Math.random() * 500)); // Simulated balance
+    fetchOwnedCredits();
   }, []);
 
   const fetchAvailableCredits = async () => {
@@ -84,30 +85,72 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
     } catch (error) {
       console.error('Error fetching available credits:', error);
       toast.error('Failed to load available credits');
+    }
+  };
+
+  const fetchOwnedCredits = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-a82c4acb/credits/owned`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch owned credits');
+      }
+
+      const data = await response.json();
+      setOwnedCredits(data.ownedCredits || []);
+    } catch (error) {
+      console.error('Error fetching owned credits:', error);
+      toast.error('Failed to load owned credits');
     } finally {
       setLoading(false);
     }
   };
 
   const handlePurchase = async () => {
-    if (!selectedCredit || purchaseAmount <= 0) return;
+    if (!selectedCredit) return;
 
     try {
-      // In a real implementation, this would interact with the blockchain
-      // For now, we'll simulate the purchase
-      toast.success(`Successfully purchased ${purchaseAmount} tCO₂e credits!`);
-      setUserBalance(prev => prev + purchaseAmount);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-a82c4acb/credits/purchase`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          creditId: selectedCredit.id
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to purchase credit');
+      }
+
+      toast.success(`Successfully purchased ${selectedCredit.amount} tCO₂e credits!`);
       setShowPurchaseDialog(false);
-      setPurchaseAmount(0);
       setSelectedCredit(null);
+      
+      // Refresh both available and owned credits
+      fetchAvailableCredits();
+      fetchOwnedCredits();
     } catch (error) {
       console.error('Error purchasing credits:', error);
-      toast.error('Failed to purchase credits');
+      toast.error(`Failed to purchase credits: ${error.message}`);
     }
   };
 
   const handleRetirement = async () => {
-    if (!selectedCredit || purchaseAmount <= 0 || !retirementReason.trim()) return;
+    if (!selectedCredit || !retirementReason.trim()) return;
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -121,7 +164,6 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
         },
         body: JSON.stringify({
           creditId: selectedCredit.id,
-          amount: purchaseAmount,
           reason: retirementReason
         })
       });
@@ -132,32 +174,28 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
       }
 
       const data = await response.json();
-      toast.success(`Successfully retired ${purchaseAmount} tCO₂e credits!`);
-      setUserBalance(prev => Math.max(0, prev - purchaseAmount));
+      toast.success(`Successfully retired ${selectedCredit.amount} tCO₂e credits!`);
       setRetirements(prev => [data.retirement, ...prev]);
       
-      // Refresh available credits to show updated amounts
-      fetchAvailableCredits();
+      // Refresh owned credits to remove retired credit
+      fetchOwnedCredits();
       
       setShowRetirementDialog(false);
-      setPurchaseAmount(0);
       setRetirementReason('');
       setSelectedCredit(null);
     } catch (error) {
       console.error('Error retiring credits:', error);
-      toast.error(`Failed to retire credits: ${error}`);
+      toast.error(`Failed to retire credits: ${error.message}`);
     }
   };
 
   const openPurchaseDialog = (credit: CarbonCredit) => {
     setSelectedCredit(credit);
-    setPurchaseAmount(Math.min(credit.carbonCredits, 50)); // Default to 50 or max available
     setShowPurchaseDialog(true);
   };
 
   const openRetirementDialog = (credit: CarbonCredit) => {
     setSelectedCredit(credit);
-    setPurchaseAmount(Math.min(userBalance, 25)); // Default to 25 or user balance
     setRetirementReason('');
     setShowRetirementDialog(true);
   };
@@ -219,12 +257,12 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="bg-gradient-to-br from-green-50 to-green-100">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Your Balance</CardTitle>
+            <CardTitle className="text-sm font-medium">Owned Credits</CardTitle>
             <CreditCard className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-700">
-              {userBalance.toLocaleString()} tCO₂e
+              {ownedCredits.reduce((sum, credit) => sum + credit.amount, 0).toLocaleString()} tCO₂e
             </div>
             <p className="text-xs text-green-600 mt-1">
               Available for retirement
@@ -239,7 +277,7 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-700">
-              {availableCredits.reduce((sum, credit) => sum + credit.carbonCredits, 0).toLocaleString()}
+              {availableCredits.reduce((sum, credit) => sum + credit.amount, 0).toLocaleString()}
             </div>
             <p className="text-xs text-blue-600 mt-1">
               tCO₂e in marketplace
@@ -309,7 +347,7 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
                   <CardContent className="space-y-4">
                     <div className="text-center">
                       <div className="text-3xl font-bold text-blue-700">
-                        {credit.carbonCredits.toLocaleString()}
+                        {credit.amount.toLocaleString()}
                       </div>
                       <p className="text-sm text-gray-600">tCO₂e Available</p>
                     </div>
@@ -350,14 +388,6 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
                         <ShoppingCart className="h-4 w-4 mr-2" />
                         Purchase
                       </Button>
-                      <Button 
-                        size="sm" 
-                        className="flex-1 bg-green-600 hover:bg-green-700"
-                        onClick={() => openRetirementDialog(credit)}
-                      >
-                        <Leaf className="h-4 w-4 mr-2" />
-                        Retire
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -366,6 +396,70 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Owned Credits for Retirement */}
+      {ownedCredits.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Your Owned Credits</CardTitle>
+            <CardDescription>
+              Credits you own and can retire for carbon offsetting
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {ownedCredits.map((credit) => (
+                <Card key={credit.id} className="hover:shadow-lg transition-shadow border-green-200">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-lg">Project {credit.projectId.slice(-8)}</CardTitle>
+                      <Badge className="bg-green-100 text-green-800">
+                        OWNED
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-green-700">
+                        {credit.amount.toLocaleString()}
+                      </div>
+                      <p className="text-sm text-gray-600">tCO₂e Owned</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Quality Score</span>
+                        <span className={getHealthScoreColor(credit.healthScore)}>
+                          {(credit.healthScore * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <Progress value={credit.healthScore * 100} className="h-2" />
+                    </div>
+
+                    <div className="text-sm text-gray-600">
+                      <div className="flex items-center justify-between">
+                        <span>Verified:</span>
+                        <span>{formatDate(credit.verifiedAt)}</span>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <Button 
+                      size="sm" 
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      onClick={() => openRetirementDialog(credit)}
+                    >
+                      <Leaf className="h-4 w-4 mr-2" />
+                      Retire Credit
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Retirement History */}
       {retirements.length > 0 && (
@@ -424,7 +518,7 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-600">Available Credits</p>
-                    <p className="font-semibold">{selectedCredit.carbonCredits.toLocaleString()} tCO₂e</p>
+                    <p className="font-semibold">{selectedCredit.amount.toLocaleString()} tCO₂e</p>
                   </div>
                   <div>
                     <p className="text-gray-600">Quality Score</p>
@@ -435,28 +529,14 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="purchase-amount">Amount to Purchase (tCO₂e)</Label>
-                <Input
-                  id="purchase-amount"
-                  type="number"
-                  min="1"
-                  max={selectedCredit.carbonCredits}
-                  value={purchaseAmount}
-                  onChange={(e) => setPurchaseAmount(parseInt(e.target.value) || 0)}
-                />
-                <p className="text-sm text-gray-500">
-                  Maximum: {selectedCredit.carbonCredits.toLocaleString()} tCO₂e
-                </p>
-              </div>
 
               <div className="bg-yellow-50 rounded-lg p-4 text-sm">
                 <p className="font-medium text-yellow-800">Purchase Summary</p>
                 <p className="text-yellow-700 mt-1">
-                  Purchasing {purchaseAmount.toLocaleString()} tCO₂e credits
+                  Purchasing {selectedCredit.amount.toLocaleString()} tCO₂e credits
                 </p>
                 <p className="text-yellow-700">
-                  Estimated cost: ${(purchaseAmount * 15).toLocaleString()} USD
+                  Estimated cost: ${(selectedCredit.amount * 15).toLocaleString()} USD
                 </p>
               </div>
 
@@ -464,7 +544,7 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
                 <Button variant="outline" onClick={() => setShowPurchaseDialog(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handlePurchase} disabled={purchaseAmount <= 0}>
+                <Button onClick={handlePurchase}>
                   <CreditCard className="h-4 w-4 mr-2" />
                   Purchase Credits
                 </Button>
@@ -489,8 +569,8 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
               <div className="bg-green-50 rounded-lg p-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-600">Your Balance</p>
-                    <p className="font-semibold">{userBalance.toLocaleString()} tCO₂e</p>
+                    <p className="text-gray-600">Credit Amount</p>
+                    <p className="font-semibold">{selectedCredit.amount.toLocaleString()} tCO₂e</p>
                   </div>
                   <div>
                     <p className="text-gray-600">Project Quality</p>
@@ -501,20 +581,6 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="retire-amount">Amount to Retire (tCO₂e)</Label>
-                <Input
-                  id="retire-amount"
-                  type="number"
-                  min="1"
-                  max={userBalance}
-                  value={purchaseAmount}
-                  onChange={(e) => setPurchaseAmount(parseInt(e.target.value) || 0)}
-                />
-                <p className="text-sm text-gray-500">
-                  Maximum: {userBalance.toLocaleString()} tCO₂e
-                </p>
-              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="retirement-reason">Reason for Retirement</Label>
@@ -530,7 +596,7 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
               <div className="bg-red-50 rounded-lg p-4 text-sm">
                 <p className="font-medium text-red-800">⚠️ Permanent Action</p>
                 <p className="text-red-700 mt-1">
-                  Retiring {purchaseAmount.toLocaleString()} tCO₂e credits will permanently remove them from circulation.
+                  Retiring {selectedCredit.amount.toLocaleString()} tCO₂e credits will permanently remove them from circulation.
                   This action cannot be undone.
                 </p>
               </div>
@@ -541,7 +607,7 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
                 </Button>
                 <Button 
                   onClick={handleRetirement} 
-                  disabled={purchaseAmount <= 0 || !retirementReason.trim()}
+                  disabled={!retirementReason.trim()}
                   className="bg-green-600 hover:bg-green-700"
                 >
                   <Leaf className="h-4 w-4 mr-2" />
