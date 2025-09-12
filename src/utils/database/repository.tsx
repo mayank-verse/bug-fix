@@ -69,6 +69,30 @@ export class DatabaseRepository {
       .filter(mrv => mrv.status === 'approved');
   }
 
+  // Carbon Credit operations
+  static async createCarbonCredit(credit: any): Promise<void> {
+    await kv.set(`credit_${credit.id}`, credit);
+  }
+
+  static async getCarbonCredit(creditId: string): Promise<any | null> {
+    const result = await kv.get(`credit_${creditId}`);
+    return result?.value || null;
+  }
+
+  static async updateCarbonCredit(creditId: string, updates: any): Promise<void> {
+    const existing = await this.getCarbonCredit(creditId);
+    if (existing) {
+      await kv.set(`credit_${creditId}`, { ...existing, ...updates });
+    }
+  }
+
+  static async getAvailableCredits(): Promise<any[]> {
+    const allCredits = await kv.getByPrefix('credit_');
+    return allCredits
+      .map(c => c.value)
+      .filter(credit => credit.availableAmount > 0);
+  }
+
   static async updateMRVData(mrvId: string, updates: Partial<MRVData>): Promise<void> {
     const existing = await this.getMRVData(mrvId);
     if (existing) {

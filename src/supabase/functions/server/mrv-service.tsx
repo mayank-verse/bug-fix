@@ -155,6 +155,22 @@ export class MRVService {
     
     return updatedMrv;
   }
+        // Create carbon credit record with proper tracking
+        const creditId = DatabaseRepository.generateId('credit');
+        const carbonCredit = {
+          id: creditId,
+          projectId: existingMRV.projectId,
+          totalIssued: existingMRV.mlResults.carbon_estimate,
+          totalRetired: 0,
+          availableAmount: existingMRV.mlResults.carbon_estimate,
+          healthScore: existingMRV.mlResults.biomass_health_score,
+          evidenceCid: existingMRV.mlResults.evidenceCid,
+          verifiedAt: new Date().toISOString(),
+          status: 'available',
+          mrvId: mrvId
+        };
+        
+        await DatabaseRepository.createCarbonCredit(carbonCredit);
 
   validateMRVData(mrvData: CreateMRVRequest): void {
     if (!mrvData.projectId) {

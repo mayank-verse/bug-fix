@@ -82,6 +82,9 @@ export interface CarbonCredit {
   evidenceCid: string;
   verifiedAt: string;
   status: 'available' | 'retired';
+  totalIssued: number;
+  totalRetired: number;
+  availableAmount: number;
 }
 
 export interface CreditRetirement {

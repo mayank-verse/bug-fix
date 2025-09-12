@@ -135,6 +135,10 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
       toast.success(`Successfully retired ${purchaseAmount} tCO₂e credits!`);
       setUserBalance(prev => Math.max(0, prev - purchaseAmount));
       setRetirements(prev => [data.retirement, ...prev]);
+      
+      // Refresh available credits to show updated amounts
+      fetchAvailableCredits();
+      
       setShowRetirementDialog(false);
       setPurchaseAmount(0);
       setRetirementReason('');

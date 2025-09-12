@@ -82,6 +82,13 @@ export function PublicDashboard() {
       const data = await response.json();
       console.log('Public stats data:', data);
       setStats(data);
+      
+      // Refresh stats every 30 seconds to show real-time updates
+      setTimeout(() => {
+        if (!loading) {
+          fetchPublicStats();
+        }
+      }, 30000);
     } catch (error) {
       console.error('Error fetching public stats:', error);
       toast.error(`Failed to load public statistics: ${error.message}`);

@@ -225,17 +225,19 @@ export function setupRoutes(app: Hono) {
       const auth = await authService.authenticateUser(c.req.raw);
       authService.requireRole(auth, 'buyer');
 
-      const approvedMrv = await DatabaseRepository.getApprovedMRV();
-      const availableCredits = approvedMrv.map(mrv => ({
-        id: mrv.id,
-        projectId: mrv.projectId,
-        carbonCredits: mrv.mlResults?.carbon_estimate || 0,
-        healthScore: mrv.mlResults?.biomass_health_score || 0,
-        evidenceCid: mrv.mlResults?.evidenceCid || '',
-        verifiedAt: mrv.verifiedAt || ''
+      const availableCredits = await DatabaseRepository.getAvailableCredits();
+      
+      // Format for frontend consumption
+      const formattedCredits = availableCredits.map(credit => ({
+        id: credit.id,
+        projectId: credit.projectId,
+        carbonCredits: credit.availableAmount,
+        healthScore: credit.healthScore,
+        evidenceCid: credit.evidenceCid,
+        verifiedAt: credit.verifiedAt
       }));
 
-      return c.json({ availableCredits });
+      return c.json({ availableCredits: formattedCredits });
     } catch (error) {
       console.log(`Available credits error: ${error}`);
       return c.json({ error: error.message }, error.message.includes('Access denied') ? 403 : 500);
@@ -248,6 +250,16 @@ export function setupRoutes(app: Hono) {
       authService.requireRole(auth, 'buyer');
 
       const { creditId, amount, reason } = await c.req.json();
+      
+      // Get the carbon credit to check availability
+      const credit = await DatabaseRepository.getCarbonCredit(creditId);
+      if (!credit) {
+        return c.json({ error: 'Carbon credit not found' }, 404);
+      }
+      
+      if (credit.availableAmount < amount) {
+        return c.json({ error: `Insufficient credits available. Only ${credit.availableAmount} tCO₂e remaining.` }, 400);
+      }
       
       const retirementId = DatabaseRepository.generateId('retirement');
       const retirement = {
@@ -262,6 +274,13 @@ export function setupRoutes(app: Hono) {
 
       await DatabaseRepository.createRetirement(retirement);
       await DatabaseRepository.incrementCreditsRetired(amount);
+      
+      // Update the carbon credit to reduce available amount
+      await DatabaseRepository.updateCarbonCredit(creditId, {
+        totalRetired: credit.totalRetired + amount,
+        availableAmount: credit.availableAmount - amount,
+        status: credit.availableAmount - amount <= 0 ? 'retired' : 'available'
+      });
 
       return c.json({ retirementId, retirement });
     } catch (error) {
