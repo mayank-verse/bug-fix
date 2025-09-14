@@ -8,15 +8,15 @@ import { CreditCard } from './CreditCard';
 import { PurchaseDialog } from './PurchaseDialog';
 import { RetirementDialog } from './RetirementDialog';
 import { RetirementHistory } from './RetirementHistory';
-import { CreditData, RetirementRecord } from './types';
+import { CarbonCredit, Retirement } from '../../../types';
 
 export function BuyerDashboard() {
-  const [availableCredits, setAvailableCredits] = useState<CreditData[]>([]);
-  const [ownedCredits, setOwnedCredits] = useState<CreditData[]>([]);
-  const [retirementHistory, setRetirementHistory] = useState<RetirementRecord[]>([]);
+  const [availableCredits, setAvailableCredits] = useState<CarbonCredit[]>([]);
+  const [ownedCredits, setOwnedCredits] = useState<CarbonCredit[]>([]);
+  const [retirementHistory, setRetirementHistory] = useState<Retirement[]>([]);
   const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
   const [isRetirementDialogOpen, setIsRetirementDialogOpen] = useState(false);
-  const [selectedCredit, setSelectedCredit] = useState<CreditData | null>(null);
+  const [selectedCredit, setSelectedCredit] = useState<CarbonCredit | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
