@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Leaf, Wallet, Award, ShoppingCart } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
@@ -33,47 +34,50 @@ export function BuyerDashboard() {
       setAvailableCredits([
         {
           id: '1',
-          projectName: 'Solar Farm Project',
-          creditType: 'VCS',
-          quantity: 1000,
-          pricePerCredit: 25.50,
-          vintage: 2023,
-          location: 'California, USA',
-          verificationStatus: 'verified'
+          projectId: 'proj-1',
+          amount: 1000,
+          ownerId: undefined,
+          isRetired: false,
+          healthScore: 95,
+          evidenceCid: 'QmSolarFarmEvidence123',
+          verifiedAt: '2023-12-01T10:00:00Z',
+          mrvId: 'mrv-solar-1'
         },
         {
           id: '2',
-          projectName: 'Wind Energy Initiative',
-          creditType: 'Gold Standard',
-          quantity: 500,
-          pricePerCredit: 30.00,
-          vintage: 2023,
-          location: 'Texas, USA',
-          verificationStatus: 'verified'
+          projectId: 'proj-2',
+          amount: 500,
+          ownerId: undefined,
+          isRetired: false,
+          healthScore: 88,
+          evidenceCid: 'QmWindEnergyEvidence456',
+          verifiedAt: '2023-11-15T14:30:00Z',
+          mrvId: 'mrv-wind-1'
         }
       ]);
 
       setOwnedCredits([
         {
           id: '3',
-          projectName: 'Forest Conservation',
-          creditType: 'VCS',
-          quantity: 250,
-          pricePerCredit: 28.00,
-          vintage: 2022,
-          location: 'Brazil',
-          verificationStatus: 'verified'
+          projectId: 'proj-3',
+          amount: 250,
+          ownerId: 'user-123',
+          isRetired: false,
+          healthScore: 92,
+          evidenceCid: 'QmForestConservationEvidence789',
+          verifiedAt: '2022-10-20T09:15:00Z',
+          mrvId: 'mrv-forest-1'
         }
       ]);
 
       setRetirementHistory([
         {
           id: '1',
-          projectName: 'Reforestation Project',
-          quantity: 100,
-          retirementDate: '2023-12-01',
-          certificateId: 'CERT-001',
+          creditId: 'credit-retired-1',
+          buyerId: 'user-123',
+          amount: 100,
           reason: 'Corporate sustainability goals'
+          retiredAt: '2023-12-01T16:45:00Z'
         }
       ]);
     } catch (error) {
@@ -95,16 +99,16 @@ export function BuyerDashboard() {
 
   const handlePurchaseComplete = (purchasedCredit: CreditData, quantity: number) => {
     // Update owned credits
-    const newCredit = { ...purchasedCredit, quantity };
+    const newCredit = { ...purchasedCredit, amount: quantity, ownerId: 'user-123' };
     setOwnedCredits(prev => [...prev, newCredit]);
     
     // Update available credits
     setAvailableCredits(prev => 
       prev.map(credit => 
         credit.id === purchasedCredit.id 
-          ? { ...credit, quantity: credit.quantity - quantity }
+          ? { ...credit, amount: credit.amount - quantity }
           : credit
-      ).filter(credit => credit.quantity > 0)
+      ).filter(credit => credit.amount > 0)
     );
     
     setIsPurchaseDialogOpen(false);
@@ -113,13 +117,13 @@ export function BuyerDashboard() {
 
   const handleRetirementComplete = (retiredCredit: CreditData, quantity: number, reason: string) => {
     // Add to retirement history
-    const newRetirement: RetirementRecord = {
+    const newRetirement: Retirement = {
       id: Date.now().toString(),
-      projectName: retiredCredit.projectName,
-      quantity,
-      retirementDate: new Date().toISOString().split('T')[0],
-      certificateId: `CERT-${Date.now()}`,
+      creditId: retiredCredit.id,
+      buyerId: 'user-123',
+      amount: quantity,
       reason
+      retiredAt: new Date().toISOString()
     };
     setRetirementHistory(prev => [newRetirement, ...prev]);
     
@@ -127,9 +131,9 @@ export function BuyerDashboard() {
     setOwnedCredits(prev => 
       prev.map(credit => 
         credit.id === retiredCredit.id 
-          ? { ...credit, quantity: credit.quantity - quantity }
+          ? { ...credit, amount: credit.amount - quantity }
           : credit
-      ).filter(credit => credit.quantity > 0)
+      ).filter(credit => credit.amount > 0)
     );
     
     setIsRetirementDialogOpen(false);
@@ -145,8 +149,9 @@ export function BuyerDashboard() {
   }
 
   const totalOwnedCredits = ownedCredits.reduce((sum, credit) => sum + credit.quantity, 0);
-  const totalRetiredCredits = retirementHistory.reduce((sum, record) => sum + record.quantity, 0);
-  const portfolioValue = ownedCredits.reduce((sum, credit) => sum + (credit.quantity * credit.pricePerCredit), 0);
+  const totalOwnedCredits = ownedCredits.reduce((sum, credit) => sum + credit.amount, 0);
+  const totalRetiredCredits = retirementHistory.reduce((sum, record) => sum + record.amount, 0);
+  const portfolioValue = ownedCredits.reduce((sum, credit) => sum + (credit.amount * 25), 0); // Using fixed price for demo
 
   return (
     <div className="space-y-6">
@@ -163,22 +168,22 @@ export function BuyerDashboard() {
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatsCard
+          icon={Leaf}
           title="Owned Credits"
-          value={totalOwnedCredits.toLocaleString()}
-          subtitle="Total credits in portfolio"
-          trend="+12%"
+          value={totalOwnedCredits}
+          unit="credits"
         />
         <StatsCard
+          icon={Wallet}
           title="Portfolio Value"
-          value={`$${portfolioValue.toLocaleString()}`}
-          subtitle="Current market value"
-          trend="+8%"
+          value={portfolioValue}
+          unit="USD"
         />
         <StatsCard
+          icon={Award}
           title="Retired Credits"
-          value={totalRetiredCredits.toLocaleString()}
-          subtitle="Environmental impact"
-          trend="+25%"
+          value={totalRetiredCredits}
+          unit="credits"
         />
       </div>
 
@@ -206,7 +211,8 @@ export function BuyerDashboard() {
                     credit={credit}
                     onAction={() => handlePurchase(credit)}
                     actionLabel="Purchase"
-                    actionVariant="default"
+                    actionIcon={ShoppingCart}
+                    actionClass="bg-blue-600 hover:bg-blue-700 text-white"
                   />
                 ))}
               </div>
@@ -231,7 +237,8 @@ export function BuyerDashboard() {
                       credit={credit}
                       onAction={() => handleRetire(credit)}
                       actionLabel="Retire"
-                      actionVariant="outline"
+                     actionIcon={Leaf}
+                     actionClass="border-green-600 text-green-600 hover:bg-green-50"
                     />
                   ))}
                 </div>
@@ -260,15 +267,15 @@ export function BuyerDashboard() {
 
       {/* Dialogs */}
       <PurchaseDialog
-        isOpen={isPurchaseDialogOpen}
-        onClose={() => setIsPurchaseDialogOpen(false)}
+        open={isPurchaseDialogOpen}
+        onOpenChange={setIsPurchaseDialogOpen}
         credit={selectedCredit}
         onPurchase={handlePurchaseComplete}
       />
 
       <RetirementDialog
-        isOpen={isRetirementDialogOpen}
-        onClose={() => setIsRetirementDialogOpen(false)}
+        open={isRetirementDialogOpen}
+        onOpenChange={setIsRetirementDialogOpen}
         credit={selectedCredit}
         onRetire={handleRetirementComplete}
       />
