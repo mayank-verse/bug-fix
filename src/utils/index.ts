@@ -1,3 +1,4 @@
+// Utility functions
 export const getHealthScoreColor = (score: number) => {
   if (score >= 0.8) return 'text-green-600';
   if (score >= 0.6) return 'text-yellow-600';
@@ -5,9 +6,9 @@ export const getHealthScoreColor = (score: number) => {
 };
 
 export const getHealthScoreLabel = (score: number) => {
-  if (score >= 0.8) return 'Excellent';
-  if (score >= 0.6) return 'Good';
-  return 'Needs Review';
+  if (score >= 0.8) return 'Premium Quality';
+  if (score >= 0.6) return 'Standard Quality';
+  return 'Basic Quality';
 };
 
 export const getStatusColor = (status: string) => {
@@ -29,9 +30,7 @@ export const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-IN', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+    day: 'numeric'
   });
 };
 
@@ -40,5 +39,15 @@ export const formatSimpleDate = (dateString: string) => {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
+  });
+};
+
+export const formatDateTime = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('en-IN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
   });
 };

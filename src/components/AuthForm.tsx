@@ -5,8 +5,8 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { projectId } from '../utils/supabase/info';
-import { supabase } from '../utils/supabase/client';
+import { projectId } from '../config/supabase';
+import { supabase } from '../config/supabase';
 import { toast } from 'sonner';
 import { Waves, Leaf, Shield, TrendingUp, CheckCircle, XCircle } from 'lucide-react';
 

@@ -3,18 +3,16 @@ import { Button } from '../../ui/button';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { WalletConnect } from '../../WalletConnect';
-import { ApiService, showApiError, showApiSuccess } from '../../../utils/frontend/api-service';
-import { 
-  User, 
-  Project, 
-  NewProjectData, 
-  MRVFormData, 
-  ProjectManagerDashboardProps 
-} from './types';
+import { ApiService, showApiError, showApiSuccess } from '../../../services/api';
+import { User, Project, NewProjectData, MRVFormData } from '../../../types';
 import { StatsCards } from './components/StatsCards';
 import { ProjectList } from './components/ProjectList';
 import { NewProjectDialog } from './components/NewProjectDialog';
 import { MRVSubmissionDialog } from './components/MRVSubmissionDialog';
+
+interface ProjectManagerDashboardProps {
+  user: User;
+}
 
 export function ProjectManagerDashboard({ user }: ProjectManagerDashboardProps) {
   const [projects, setProjects] = useState<Project[]>([]);

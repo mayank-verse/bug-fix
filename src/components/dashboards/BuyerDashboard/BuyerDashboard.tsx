@@ -3,8 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Button } from '../../ui/button';
 import { Separator } from '../../ui/separator';
 import { Progress } from '../../ui/progress';
-import { projectId } from '../../../utils/supabase/info';
-import { supabase } from '../../../utils/supabase/client';
+import { projectId } from '../../../config/supabase';
+import { supabase } from '../../../config/supabase';
 import { ShoppingCart, Award, TrendingUp, Leaf, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { WalletConnect } from '../../WalletConnect';
@@ -13,7 +13,8 @@ import { CreditCard } from './CreditCard';
 import { PurchaseDialog } from './PurchaseDialog';
 import { RetirementDialog } from './RetirementDialog';
 import { RetirementHistory } from './RetirementHistory';
-import { User, CarbonCredit, Retirement } from '../../../types/dashboard';
+import { User, CarbonCredit, Retirement } from '../../../types';
+import { getHealthScoreColor, getHealthScoreLabel, formatDate } from '../../../utils';
 
 interface BuyerDashboardProps {
   user: User;
@@ -154,26 +155,6 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
       
       setShowRetirementDialog(false);
       setRetirementReason('');
-      setSelectedCredit(null);
-    } catch (error) {
-      const err = error as Error;
-      console.error('Error retiring credits:', err.message);
-      toast.error(`Failed to retire credits: ${err.message}`);
-    }
-  };
-
-  const openPurchaseDialog = (credit: CarbonCredit) => {
-    setSelectedCredit(credit);
-    setPurchaseAmount(1);
-    setShowPurchaseDialog(true);
-  };
-
-  const openRetirementDialog = (credit: CarbonCredit) => {
-    setSelectedCredit(credit);
-    setRetirementReason('');
-    setShowRetirementDialog(true);
-  };
-
   if (loading) {
     return (
       <div className="space-y-6">
@@ -283,38 +264,9 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
             <CardDescription>
               Credits you own and can retire for carbon offsetting
             </CardDescription>
+import { User, CarbonCredit, Retirement } from '../../../types';
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {ownedCredits.map((credit) => (
-                <CreditCard
-                  key={credit.id}
-                  credit={credit}
-                  type="owned"
-                  onAction={openRetirementDialog}
-                  actionLabel="Retire Credit"
-                  actionIcon={Leaf}
-                  actionClass="bg-green-600 hover:bg-green-700"
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Retirement History */}
-      {retirements.length > 0 && (
-        <RetirementHistory retirements={retirements} />
-      )}
-
-      {/* Purchase Dialog */}
-      <PurchaseDialog
-        open={showPurchaseDialog}
-        onOpenChange={setShowPurchaseDialog}
-        credit={selectedCredit}
-        purchaseAmount={purchaseAmount}
-        onPurchaseAmountChange={setPurchaseAmount}
-        onPurchase={handlePurchase}
+import { getHealthScoreColor, getHealthScoreLabel, formatDate } from '../../../utils';
       />
 
       {/* Retirement Dialog */}

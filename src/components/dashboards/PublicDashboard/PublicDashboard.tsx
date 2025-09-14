@@ -4,22 +4,13 @@ import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import { Separator } from '../../ui/separator';
 import { ScrollArea } from '../../ui/scroll-area';
-import { ApiService, showApiError } from '../../../utils/frontend/api-service';
+import { ApiService, showApiError } from '../../../services/api';
 import { Waves, TreePine, Award, ExternalLink, MapPin, Calendar, Leaf, RefreshCw, AlertCircle, Server } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId } from '../../../utils/supabase/info';
+import { projectId } from '../../../config/supabase';
+import { getStatusColor, formatDate } from '../../../utils';
 
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  location: string;
-  ecosystemType: string;
-  area: number;
-  status: string;
-  createdAt: string;
-  onChainTxHash?: string;
-}
+import { Project } from '../../../types';
 
 interface PublicStats {
   totalCreditsIssued: number;
@@ -27,7 +18,6 @@ interface PublicStats {
   totalProjects: number;
   projects: Project[];
 }
-
 export function PublicDashboard() {
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [loading, setLoading] = useState(true);

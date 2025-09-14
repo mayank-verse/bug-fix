@@ -3,27 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui
 import { Shield } from 'lucide-react';
 import { WalletConnect } from '../WalletConnect';
 import { toast } from 'sonner';
-import { projectId } from '../../utils/supabase/info';
-import { supabase } from '../../utils/supabase/client';
+import { projectId } from '../../config/supabase';
+import { supabase } from '../../config/supabase';
 
 // Import sub-components
-import { StatsCards } from '../dashboards/NCCRVerifier/StatsCards';
-import { ProjectList } from '../dashboards/NCCRVerifier/ProjectList';
-import { MRVList } from '../dashboards/NCCRVerifier/MRVList';
-import { VerificationDialog } from '../dashboards/NCCRVerifier/VerificationDialog';
-import { ProjectDialog } from '../dashboards/NCCRVerifier/ProjectDialog';
+import { StatsCards } from './NCCRVerifier/StatsCards';
+import { ProjectList } from './NCCRVerifier/ProjectList';
+import { MRVList } from './NCCRVerifier/MRVList';
+import { VerificationDialog } from './NCCRVerifier/VerificationDialog';
+import { ProjectDialog } from './NCCRVerifier/ProjectDialog';
 
 // Import types
-import { User, Project, MRVData } from '../../types/dashboard';
+import { User, Project, MRVData } from '../../types';
 
 // Import utils
-import { 
-  getHealthScoreColor, 
-  getHealthScoreLabel, 
-  getStatusColor, 
-  formatDate, 
-  formatSimpleDate 
-} from '../../utils/dashboardUtils';
+import { getHealthScoreColor, getHealthScoreLabel, getStatusColor, formatDate, formatSimpleDate } from '../../utils';
 
 interface NCCRVerifierDashboardProps {
   user: User;

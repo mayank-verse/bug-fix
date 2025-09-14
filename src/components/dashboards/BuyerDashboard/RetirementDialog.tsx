@@ -4,8 +4,8 @@ import { Button } from '../../ui/button';
 import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
 import { Leaf } from 'lucide-react';
-import { CarbonCredit } from '../../../types/dashboard';
-import { getHealthScoreColor, getHealthScoreLabel } from '../../../utils/formatters';
+import { CarbonCredit } from '../../../types';
+import { getHealthScoreColor, getHealthScoreLabel } from '../../../utils';
 
 interface RetirementDialogProps {
   open: boolean;

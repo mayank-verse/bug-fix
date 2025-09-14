@@ -6,8 +6,8 @@ import { Progress } from './ui/progress';
 import { Alert, AlertDescription } from './ui/alert';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
-import { supabase } from '../utils/supabase/client';
-import { ApiService, showApiError, showApiSuccess } from '../utils/frontend/api-service';
+import { supabase } from '../config/supabase';
+import { ApiService, showApiError, showApiSuccess } from '../services/api';
 import { 
   Brain, 
   CheckCircle, 
@@ -25,20 +25,11 @@ import {
   Activity
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { MLVerification } from '../types';
 
 interface MLVerificationPanelProps {
   project: any;
   onVerificationComplete?: () => void;
-}
-
-interface MLVerification {
-  projectId: string;
-  mlScore: number;
-  confidence: number;
-  riskFactors: string[];
-  recommendation: string;
-  timestamp: string;
-  verifierId: string;
 }
 
 export function MLVerificationPanel({ project, onVerificationComplete }: MLVerificationPanelProps) {

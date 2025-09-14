@@ -2,8 +2,8 @@ import React from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Button } from '../../ui/button';
 import { CreditCard } from 'lucide-react';
-import { CarbonCredit } from '../../../types/dashboard';
-import { getHealthScoreColor } from '../../../utils/formatters';
+import { CarbonCredit } from '../../../types';
+import { getHealthScoreColor } from '../../../utils';
 
 interface PurchaseDialogProps {
   open: boolean;

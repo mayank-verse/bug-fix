@@ -1,84 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import { Button } from './components/ui/button';
-import { Input } from './components/ui/input';
-import { Label } from './components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Badge } from './components/ui/badge';
-import { Separator } from './components/ui/separator';
-import { LandingPage } from './components/LandingPage';
-import { PublicDashboard } from './components/dashboards/PublicDashboard/PublicDashboard';
-import { ProjectManagerDashboard } from './components/dashboards/ProjectManagerDashboard';
-import { NCCRVerifierDashboard } from './components/dashboards/NCCRVerifierDashboard';
-import { BuyerDashboard } from './components/BuyerDashboard';
-import { AuthForm } from './components/AuthForm';
-import { supabase } from './utils/supabase/client';
+import { 
+  LandingPage,
+  AuthForm,
+  PublicDashboard,
+  ProjectManagerDashboard,
+  NCCRVerifierDashboard,
+  BuyerDashboard,
+  BlockchainStatus
+} from './components';
+import { useAuth } from './hooks/useAuth';
 import { Waves, Leaf, Shield, TrendingUp, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from './components/ui/sonner';
-import { BlockchainStatus } from './components/BlockchainStatus';
-
-interface User {
-  id: string;
-  email: string;
-  user_metadata: {
-    name: string;
-    role: 'project_manager' | 'nccr_verifier' | 'buyer';
-  };
-}
+import { User } from './types';
 
 function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, signOut } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
   const [activeTab, setActiveTab] = useState('public');
 
   useEffect(() => {
-    // Check for existing session
-    checkUser();
-    
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          setUser(session.user as unknown as User);
-          // Set active tab based on user role
-          if (session.user.user_metadata?.role) {
-            setActiveTab(session.user.user_metadata.role);
-          }
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setActiveTab('public');
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const checkUser = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setUser(session.user as unknown as User);
-        if (session.user.user_metadata?.role) {
-          setActiveTab(session.user.user_metadata.role);
-        }
-      }
-    } catch (error) {
-      console.error('Error checking user session:', error);
-    } finally {
-      setLoading(false);
+    if (user?.user_metadata?.role) {
+      setActiveTab(user.user_metadata.role);
     }
-  };
+  }, [user]);
 
   const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
+    const result = await signOut();
+    if (result.success) {
       setShowAuth(false); // Return to landing page
       toast.success('Signed out successfully');
-    } catch (error) {
-      console.error('Error signing out:', error);
+    } else {
       toast.error('Error signing out');
     }
   };

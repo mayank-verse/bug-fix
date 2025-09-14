@@ -3,26 +3,12 @@ import { Button } from '../ui/button';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { WalletConnect } from '../WalletConnect';
-import { ApiService, showApiError, showApiSuccess } from '../../utils/frontend/api-service';
+import { ApiService, showApiError, showApiSuccess } from '../../services/api';
 import { StatsCards } from './ProjectManager/StatsCards';
 import { ProjectList } from './ProjectManager/ProjectList';
 import { NewProjectDialog } from './ProjectManager/NewProjectDialog';
 import { MRVSubmissionDialog } from './ProjectManager/MRVSubmissionDialog';
-import { 
-  Project, 
-  NewProjectData, 
-  MRVFormData,
-  EcosystemType 
-} from './ProjectManager/types'; // You'll need to create this types file
-
-interface User {
-  id: string;
-  email: string;
-  user_metadata: {
-    name: string;
-    role: string;
-  };
-}
+import { User, Project, NewProjectData, MRVFormData, EcosystemType } from '../../types';
 
 interface ProjectManagerDashboardProps {
   user: User;

@@ -5,8 +5,8 @@ import { Badge } from '../../ui/badge';
 import { Separator } from '../../ui/separator';
 import { Progress } from '../../ui/progress';
 import { ExternalLink } from 'lucide-react';
-import { CarbonCredit } from '../../../types/dashboard';
-import { getHealthScoreColor, getHealthScoreLabel, formatDate } from '../../../utils/formatters';
+import { CarbonCredit } from '../../../types';
+import { getHealthScoreColor, getHealthScoreLabel, formatDate } from '../../../utils';
 
 interface CreditCardProps {
   credit: CarbonCredit;

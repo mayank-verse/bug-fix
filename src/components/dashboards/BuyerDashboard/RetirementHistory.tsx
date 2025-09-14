@@ -3,8 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { ExternalLink } from 'lucide-react';
-import { Retirement } from '../../../types/dashboard';
-import { formatDate } from '../../../utils/formatters';
+import { Retirement } from '../../../types';
+import { formatDate } from '../../../utils';
 
 interface RetirementHistoryProps {
   retirements: Retirement[];

@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { ExternalLink, Clock, CheckCircle, XCircle, Loader } from 'lucide-react';
-import { AvalancheService, BlockchainTransaction as Transaction } from '../utils/blockchain/avalanche-service';
+import { AvalancheService, BlockchainTransaction as Transaction } from '../services/blockchain';
 import { toast } from 'sonner';
 
 interface BlockchainTransactionProps {

@@ -5,14 +5,8 @@ import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Wallet, ExternalLink, AlertCircle, Check, Copy } from 'lucide-react';
 import { toast } from 'sonner';
-import { AvalancheService } from '../utils/blockchain/avalanche-service';
-
-interface WalletInfo {
-  address: string;
-  balance: string;
-  network: string;
-  chainId: number;
-}
+import { AvalancheService } from '../services/blockchain';
+import { WalletInfo } from '../types';
 
 interface WalletConnectProps {
   onWalletConnected?: (wallet: WalletInfo) => void;
