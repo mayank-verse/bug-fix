@@ -38,7 +38,7 @@ export function BuyerDashboard() {
           amount: 1000,
           ownerId: undefined,
           isRetired: false,
-          healthScore: 95,
+          healthScore: 0.95,
           evidenceCid: 'QmSolarFarmEvidence123',
           verifiedAt: '2023-12-01T10:00:00Z',
           mrvId: 'mrv-solar-1'
@@ -49,7 +49,7 @@ export function BuyerDashboard() {
           amount: 500,
           ownerId: undefined,
           isRetired: false,
-          healthScore: 88,
+          healthScore: 0.88,
           evidenceCid: 'QmWindEnergyEvidence456',
           verifiedAt: '2023-11-15T14:30:00Z',
           mrvId: 'mrv-wind-1'
@@ -63,7 +63,7 @@ export function BuyerDashboard() {
           amount: 250,
           ownerId: 'user-123',
           isRetired: false,
-          healthScore: 92,
+          healthScore: 0.92,
           evidenceCid: 'QmForestConservationEvidence789',
           verifiedAt: '2022-10-20T09:15:00Z',
           mrvId: 'mrv-forest-1'
@@ -76,7 +76,7 @@ export function BuyerDashboard() {
           creditId: 'credit-retired-1',
           buyerId: 'user-123',
           amount: 100,
-          reason: 'Corporate sustainability goals'
+          reason: 'Corporate sustainability goals',
           retiredAt: '2023-12-01T16:45:00Z'
         }
       ]);
@@ -87,17 +87,17 @@ export function BuyerDashboard() {
     }
   };
 
-  const handlePurchase = (credit: CreditData) => {
+  const handlePurchase = (credit: CarbonCredit) => {
     setSelectedCredit(credit);
     setIsPurchaseDialogOpen(true);
   };
 
-  const handleRetire = (credit: CreditData) => {
+  const handleRetire = (credit: CarbonCredit) => {
     setSelectedCredit(credit);
     setIsRetirementDialogOpen(true);
   };
 
-  const handlePurchaseComplete = (purchasedCredit: CreditData, quantity: number) => {
+  const handlePurchaseComplete = (purchasedCredit: CarbonCredit, quantity: number) => {
     // Update owned credits
     const newCredit = { ...purchasedCredit, amount: quantity, ownerId: 'user-123' };
     setOwnedCredits(prev => [...prev, newCredit]);
@@ -115,14 +115,14 @@ export function BuyerDashboard() {
     setSelectedCredit(null);
   };
 
-  const handleRetirementComplete = (retiredCredit: CreditData, quantity: number, reason: string) => {
+  const handleRetirementComplete = (retiredCredit: CarbonCredit, quantity: number, reason: string) => {
     // Add to retirement history
     const newRetirement: Retirement = {
       id: Date.now().toString(),
       creditId: retiredCredit.id,
       buyerId: 'user-123',
       amount: quantity,
-      reason
+      reason,
       retiredAt: new Date().toISOString()
     };
     setRetirementHistory(prev => [newRetirement, ...prev]);
@@ -148,7 +148,6 @@ export function BuyerDashboard() {
     );
   }
 
-  const totalOwnedCredits = ownedCredits.reduce((sum, credit) => sum + credit.quantity, 0);
   const totalOwnedCredits = ownedCredits.reduce((sum, credit) => sum + credit.amount, 0);
   const totalRetiredCredits = retirementHistory.reduce((sum, record) => sum + record.amount, 0);
   const portfolioValue = ownedCredits.reduce((sum, credit) => sum + (credit.amount * 25), 0); // Using fixed price for demo
@@ -261,7 +260,7 @@ export function BuyerDashboard() {
         </TabsContent>
 
         <TabsContent value="history" className="space-y-6">
-          <RetirementHistory records={retirementHistory} />
+          <RetirementHistory retirements={retirementHistory} />
         </TabsContent>
       </Tabs>
 
