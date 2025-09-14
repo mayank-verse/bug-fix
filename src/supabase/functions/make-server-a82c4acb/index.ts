@@ -1,6 +1,6 @@
-import { Hono } from "npm:hono";
-import { cors } from "npm:hono/cors";
-import { logger } from "npm:hono/logger";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { logger } from "hono/logger";
 import { AuthService } from "./services/auth-service.ts";
 import { ProjectService } from "./services/project-service.ts";
 import { MRVService } from "./services/mrv-service.ts";
@@ -45,8 +45,9 @@ app.post("/signup", async (c) => {
     const result = await authService.createUser(email, password, name, role);
     return c.json(result);
   } catch (error) {
-    console.log(`Signup error: ${error}`);
-    return c.json({ error: error.message }, 400);
+    const err=error as Error;
+    console.log(`Signup error: ${err.message}`);
+    return c.json({ error: err.message }, 400);
   }
 });
 
@@ -84,8 +85,9 @@ app.post("/projects", async (c) => {
     const result = await projectService.createProject(projectData, auth.user.id, auth.user);
     return c.json(result);
   } catch (error) {
+    const err=error as Error;
     console.log(`Project registration error: ${error}`);
-    return c.json({ error: error.message }, error.message.includes('Access denied') ? 403 : 500);
+    return c.json({ error: err.message }, err.message.includes('Access denied') ? 403 : 500);
   }
 });
 
@@ -97,8 +99,9 @@ app.get("/projects/manager", async (c) => {
     const projects = await projectService.getManagerProjects(auth.user.id);
     return c.json({ projects });
   } catch (error) {
+    const err=error as Error;
     console.log(`Manager projects error: ${error}`);
-    return c.json({ error: error.message }, error.message.includes('Access denied') ? 403 : 500);
+    return c.json({ error: err.message }, err.message.includes('Access denied') ? 403 : 500);
   }
 });
 
@@ -110,8 +113,9 @@ app.get("/projects/all", async (c) => {
     const projects = await projectService.getAllProjects();
     return c.json({ projects });
   } catch (error) {
+    const err=error as Error;
     console.log(`All projects error: ${error}`);
-    return c.json({ error: error.message }, error.message.includes('Access denied') ? 403 : 500);
+    return c.json({ error: err.message }, err.message.includes('Access denied') ? 403 : 500);
   }
 });
 
@@ -125,8 +129,9 @@ app.delete("/projects/:projectId", async (c) => {
     
     return c.json({ success: true, message: 'Project deleted successfully' });
   } catch (error) {
+    const err=error as Error;
     console.log(`Project deletion error: ${error}`);
-    return c.json({ error: error.message }, error.message.includes('Access denied') ? 403 : 500);
+    return c.json({ error: err.message }, err.message.includes('Access denied') ? 403 : 500);
   }
 });
 
@@ -152,8 +157,9 @@ app.post("/mrv/upload", async (c) => {
       message: `Successfully uploaded ${uploadedFiles.length} files`
     });
   } catch (error) {
+    const err=error as Error;
     console.log(`File upload error: ${error}`);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: err.message }, 500);
   }
 });
 
@@ -168,8 +174,9 @@ app.post("/mrv", async (c) => {
     const result = await mrvService.submitMRVData(mrvData, auth.user.id);
     return c.json(result);
   } catch (error) {
+    const err=error as Error;
     console.log(`MRV submission error: ${error}`);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: err.message }, 500);
   }
 });
 
@@ -181,8 +188,9 @@ app.get("/mrv/pending", async (c) => {
     const pendingMrv = await mrvService.getPendingMRV();
     return c.json({ pendingMrv });
   } catch (error) {
+    const err=error as Error;
     console.log(`Pending MRV error: ${error}`);
-    return c.json({ error: error.message }, error.message.includes('Access denied') ? 403 : 500);
+    return c.json({ error: err.message }, err.message.includes('Access denied') ? 403 : 500);
   }
 });
 
@@ -197,8 +205,9 @@ app.post("/mrv/:mrvId/approve", async (c) => {
     const updatedMrv = await mrvService.approveMRV(mrvId, auth.user.id, approved, notes);
     return c.json({ success: true, mrvData: updatedMrv });
   } catch (error) {
+    const err=error as Error;
     console.log(`MRV approval error: ${error}`);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: err.message }, 500);
   }
 });
 
@@ -213,8 +222,9 @@ app.post("/ml/verify-project", async (c) => {
     const verification = await mlService.verifyProject(projectId, projectData, auth.user.id);
     return c.json({ success: true, verification });
   } catch (error) {
+    const err=error as Error;
     console.log(`ML verification error: ${error}`);
-    return c.json({ error: error.message }, error.message.includes('Access denied') ? 403 : 500);
+    return c.json({ error: err.message }, err.message.includes('Access denied') ? 403 : 500);
   }
 });
 
@@ -232,8 +242,9 @@ app.get("/ml/verification/:projectId", async (c) => {
 
     return c.json({ verification });
   } catch (error) {
+    const err=error as Error;
     console.log(`Get ML verification error: ${error}`);
-    return c.json({ error: error.message }, error.message.includes('Access denied') ? 403 : 500);
+    return c.json({ error: err.message }, err.message.includes('Access denied') ? 403 : 500);
   }
 });
 
@@ -246,8 +257,9 @@ app.get("/credits/available", async (c) => {
     const availableCredits = await DatabaseRepository.getAvailableCredits();
     return c.json({ availableCredits });
   } catch (error) {
+    const err=error as Error;
     console.log(`Available credits error: ${error}`);
-    return c.json({ error: error.message }, error.message.includes('Access denied') ? 403 : 500);
+    return c.json({ error: err.message }, err.message.includes('Access denied') ? 403 : 500);
   }
 });
 
@@ -259,8 +271,9 @@ app.get("/credits/owned", async (c) => {
     const ownedCredits = await DatabaseRepository.getBuyerCredits(auth.user.id);
     return c.json({ ownedCredits });
   } catch (error) {
+    const err=error as Error;
     console.log(`Owned credits error: ${error}`);
-    return c.json({ error: error.message }, error.message.includes('Access denied') ? 403 : 500);
+    return c.json({ error: err.message }, err.message.includes('Access denied') ? 403 : 500);
   }
 });
 
@@ -283,8 +296,9 @@ app.post("/credits/purchase", async (c) => {
       creditId 
     });
   } catch (error) {
+    const err=error as Error;
     console.log(`Credit purchase error: ${error}`);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: err.message }, 500);
   }
 });
 
@@ -319,9 +333,10 @@ app.post("/credits/retire", async (c) => {
       }
     });
   } catch (error) {
+    const err=error as Error;
     console.log(`Credit retirement error: ${error}`);
-    return c.json({ error: error.message }, 500);
+    return c.json({ error: err.message }, 500);
   }
 });
 
-Deno.serve(app.fetch);
+export default app;

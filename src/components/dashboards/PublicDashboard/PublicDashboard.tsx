@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Separator } from './ui/separator';
-import { ScrollArea } from './ui/scroll-area';
-import { ApiService, showApiError } from '../utils/frontend/api-service';
-import { Waves, TreePine, Award, ExternalLink, MapPin, Calendar, Leaf } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
+import { Badge } from '../../ui/badge';
+import { Button } from '../../ui/button';
+import { Separator } from '../../ui/separator';
+import { ScrollArea } from '../../ui/scroll-area';
+import { ApiService, showApiError } from '../../../utils/frontend/api-service';
+import { Waves, TreePine, Award, ExternalLink, MapPin, Calendar, Leaf, RefreshCw, AlertCircle, Server } from 'lucide-react';
+import { toast } from 'sonner';
+import { projectId } from '../../../utils/supabase/info';
 
 interface Project {
   id: string;
@@ -30,71 +31,109 @@ interface PublicStats {
 export function PublicDashboard() {
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [connectionError, setConnectionError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // Mock data for demonstration when server is not available
+  const mockStats: PublicStats = {
+    totalCreditsIssued: 12500,
+    totalCreditsRetired: 8500,
+    totalProjects: 8,
+    projects: [
+      {
+        id: '1',
+        name: 'Sundarbans Mangrove Conservation',
+        description: 'Protection and restoration of mangrove forests in the Sundarbans delta',
+        location: 'West Bengal',
+        ecosystemType: 'Mangrove',
+        area: 2500,
+        status: 'approved',
+        createdAt: '2023-05-15T00:00:00Z',
+        onChainTxHash: '0x1234567890abcdef'
+      },
+      {
+        id: '2',
+        name: 'Goa Seagrass Preservation',
+        description: 'Conservation of seagrass meadows along the Goa coastline',
+        location: 'Goa',
+        ecosystemType: 'Seagrass',
+        area: 1200,
+        status: 'mrv_submitted',
+        createdAt: '2023-08-22T00:00:00Z'
+      }
+    ]
+  };
 
   useEffect(() => {
-    // First test health endpoint, then fetch stats
-    testHealthEndpoint();
-  }, []);
-
-  const testHealthEndpoint = async () => {
-    try {
-      console.log('Testing health endpoint...');
-      const healthResponse = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-a82c4acb/health`);
-      console.log('Health endpoint status:', healthResponse.status);
-      
-      if (healthResponse.ok) {
-        const healthData = await healthResponse.json();
-        console.log('Health endpoint response:', healthData);
-        // If health check passes, fetch stats
-        fetchPublicStats();
-      } else {
-        console.error('Health check failed');
-        toast.error('Server is not responding');
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error('Health check error:', error);
-      toast.error('Cannot connect to server');
-      setLoading(false);
-    }
-  };
+    fetchPublicStats();
+  }, [retryCount]);
 
   const fetchPublicStats = async () => {
     try {
-      console.log('Fetching public stats from:', `https://${projectId}.supabase.co/functions/v1/make-server-a82c4acb/public/stats`);
+      setLoading(true);
+      setConnectionError(false);
       
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-a82c4acb/public/stats`, {
+      // First try the primary endpoint
+      let apiUrl = `https://${projectId}.supabase.co/functions/v1/make-server-a82c4acb/public/stats`;
+      console.log('Trying to fetch from:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
         }
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Response error:', errorText);
-        throw new Error(`Failed to fetch public stats: ${response.status} ${errorText}`);
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
       console.log('Public stats data:', data);
       setStats(data);
       
-      // Refresh stats every 30 seconds to show real-time updates
-      setTimeout(() => {
-        if (!loading) {
-          fetchPublicStats();
-        }
-      }, 30000);
     } catch (error) {
-      console.error('Error fetching public stats:', error);
-      toast.error(`Failed to load public statistics: ${error.message}`);
+      console.error('Error fetching from primary endpoint:', error);
+      
+      // Try fallback endpoint (common Supabase Edge Functions pattern)
+      try {
+        const fallbackUrl = `https://${projectId}.supabase.co/functions/v1/public/stats`;
+        console.log('Trying fallback endpoint:', fallbackUrl);
+        
+        const fallbackResponse = await fetch(fallbackUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (fallbackResponse.ok) {
+          const data = await fallbackResponse.json();
+          console.log('Success with fallback endpoint:', data);
+          setStats(data);
+          toast.success('Connected to server using fallback endpoint');
+          return;
+        }
+      } catch (fallbackError) {
+        console.error('Fallback endpoint also failed:', fallbackError);
+      }
+      
+      // If both endpoints fail, show connection error and use mock data for demo
+      setConnectionError(true);
+      setStats(mockStats); // Use mock data for demonstration
+      toast.error('Server connection failed. Showing demo data.', {
+        description: 'The application will use real data when the server is available.',
+        duration: 5000
+      });
+      
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    toast.info('Retrying server connection...');
   };
 
   const getStatusColor = (status: string) => {
@@ -141,6 +180,28 @@ export function PublicDashboard() {
 
   return (
     <div className="space-y-8">
+      {/* Connection Status Banner */}
+      {connectionError && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md">
+          <div className="flex items-center">
+            <AlertCircle className="h-6 w-6 mr-2" />
+            <div>
+              <p className="font-medium">Server Connection Issue</p>
+              <p>Cannot connect to the backend server. Showing demo data.</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2"
+                onClick={handleRetry}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry Connection
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <div className="text-center py-12 bg-gradient-to-r from-blue-600 to-green-600 rounded-lg text-white">
         <h2 className="text-3xl font-bold mb-4">India's Blue Carbon Future</h2>
@@ -194,10 +255,17 @@ export function PublicDashboard() {
             <p className="text-xs text-teal-600 mt-1">
               Coastal ecosystem projects
             </p>
+            {connectionError && (
+              <p className="text-xs text-amber-600 mt-1 flex items-center">
+                <Server className="h-3 w-3 mr-1" />
+                Demo data
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
 
+      {/* Rest of your component remains the same */}
       {/* Impact Metrics */}
       <Card>
         <CardHeader>
@@ -258,52 +326,62 @@ export function PublicDashboard() {
               <p className="text-sm mt-2">Be the first to register a blue carbon project!</p>
             </div>
           ) : (
-            <ScrollArea className="h-96">
-              <div className="space-y-4">
-                {stats.projects.map((project) => (
-                  <div key={project.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="font-semibold text-lg">{project.name}</h3>
-                          <Badge className={getStatusColor(project.status)}>
-                            {project.status.replace('_', ' ').toUpperCase()}
-                          </Badge>
-                        </div>
-                        
-                        <p className="text-gray-600 mb-3">{project.description}</p>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                          <div className="flex items-center space-x-2">
-                            <MapPin className="h-4 w-4 text-gray-400" />
-                            <span>{project.location}</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <TreePine className="h-4 w-4 text-gray-400" />
-                            <span>{project.ecosystemType}</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Calendar className="h-4 w-4 text-gray-400" />
-                            <span>{formatDate(project.createdAt)}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-3 text-sm text-gray-600">
-                          <strong>Area:</strong> {project.area.toLocaleString()} hectares
-                        </div>
-                      </div>
-                      
-                      {project.onChainTxHash && (
-                        <Button variant="outline" size="sm" className="ml-4">
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          View on Chain
-                        </Button>
-                      )}
-                    </div>
+            <>
+              {connectionError && (
+                <div className="mb-4 bg-amber-50 border-l-4 border-amber-400 p-4 rounded">
+                  <div className="flex items-center">
+                    <AlertCircle className="h-5 w-5 text-amber-500 mr-2" />
+                    <span className="text-amber-700">Showing demo project data</span>
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
+                </div>
+              )}
+              <ScrollArea className="h-96">
+                <div className="space-y-4">
+                  {stats.projects.map((project) => (
+                    <div key={project.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h3 className="font-semibold text-lg">{project.name}</h3>
+                            <Badge className={getStatusColor(project.status)}>
+                              {project.status.replace('_', ' ').toUpperCase()}
+                            </Badge>
+                          </div>
+                          
+                          <p className="text-gray-600 mb-3">{project.description}</p>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div className="flex items-center space-x-2">
+                              <MapPin className="h-4 w-4 text-gray-400" />
+                              <span>{project.location}</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <TreePine className="h-4 w-4 text-gray-400" />
+                              <span>{project.ecosystemType}</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Calendar className="h-4 w-4 text-gray-400" />
+                              <span>{formatDate(project.createdAt)}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-3 text-sm text-gray-600">
+                            <strong>Area:</strong> {project.area.toLocaleString()} hectares
+                          </div>
+                        </div>
+                        
+                        {project.onChainTxHash && (
+                          <Button variant="outline" size="sm" className="ml-4">
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            View on Chain
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </>
           )}
         </CardContent>
       </Card>

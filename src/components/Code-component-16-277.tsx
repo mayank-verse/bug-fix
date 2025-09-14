@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Wallet, ExternalLink, AlertCircle, Check, Copy } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { AvalancheService } from '../utils/blockchain/avalanche-service';
 
 interface WalletInfo {
@@ -123,7 +123,7 @@ export function WalletConnect({
         method: 'eth_chainId',
       });
 
-      const balanceInEth = parseFloat(parseInt(balance, 16) / 1e18).toFixed(4);
+      const balanceInEth = (parseInt(balance, 16) / 1e18).toFixed(4);
       const networkName = parseInt(chainId, 16) === 43113 ? 'Fuji Testnet' : 
                           parseInt(chainId, 16) === 43114 ? 'Avalanche Mainnet' : 'Unknown';
 

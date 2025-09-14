@@ -1,14 +1,15 @@
 // Database Repository Layer
 // Handles all data access operations using the KV store
 
-import * as kv from '../../supabase/functions/server/kv_store.tsx';
+import * as kv from '../../supabase/functions/make-server-a82c4acb/kv_store.ts';
 import { 
   Project, 
   MRVData, 
   MLVerification, 
   CreditRetirement, 
   PublicStats,
-  User 
+  User, 
+  CarbonCredit
 } from './models.tsx';
 
 export class DatabaseRepository {

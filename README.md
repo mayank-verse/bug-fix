@@ -1,3 +1,12 @@
+# If you see the error: "Could not find a declaration file for module 'react'..."
+
+Run the following command in your project directory to install the required type definitions:
+
+```
+npm install --save-dev @types/react @types/react-dom
+```
+
+This will resolve TypeScript errors related to missing React type declarations.
 
   # Finalize Samudra Ledger Prompt
 

@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { projectId } from '../utils/supabase/info';
 import { supabase } from '../utils/supabase/client';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { Waves, Leaf, Shield, TrendingUp, CheckCircle, XCircle } from 'lucide-react';
 
 export function AuthForm() {

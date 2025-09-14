@@ -7,14 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Badge } from './components/ui/badge';
 import { Separator } from './components/ui/separator';
 import { LandingPage } from './components/LandingPage';
-import { PublicDashboard } from './components/PublicDashboard';
-import { ProjectManagerDashboard } from './components/ProjectManagerDashboard';
-import { NCCRVerifierDashboard } from './components/NCCRVerifierDashboard';
+import { PublicDashboard } from './components/dashboards/PublicDashboard/PublicDashboard';
+import { ProjectManagerDashboard } from './components/dashboards/ProjectManagerDashboard';
+import { NCCRVerifierDashboard } from './components/dashboards/NCCRVerifierDashboard';
 import { BuyerDashboard } from './components/BuyerDashboard';
 import { AuthForm } from './components/AuthForm';
 import { supabase } from './utils/supabase/client';
 import { Waves, Leaf, Shield, TrendingUp, LogOut } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { Toaster } from './components/ui/sonner';
 import { BlockchainStatus } from './components/BlockchainStatus';
 
@@ -41,7 +41,7 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_IN' && session) {
-          setUser(session.user as User);
+          setUser(session.user as unknown as User);
           // Set active tab based on user role
           if (session.user.user_metadata?.role) {
             setActiveTab(session.user.user_metadata.role);
@@ -60,7 +60,7 @@ function App() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        setUser(session.user as User);
+        setUser(session.user as unknown as User);
         if (session.user.user_metadata?.role) {
           setActiveTab(session.user.user_metadata.role);
         }

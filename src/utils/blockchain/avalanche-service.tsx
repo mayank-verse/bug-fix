@@ -133,8 +133,9 @@ export class AvalancheService {
       
       return registration;
     } catch (error) {
+      const err=error as Error;
       console.error('❌ Failed to register project on blockchain:', error);
-      throw new Error(`Blockchain registration failed: ${error.message}`);
+      throw new Error(`Blockchain registration failed: ${err.message}`);
     }
   }
 
@@ -172,8 +173,9 @@ export class AvalancheService {
       
       return issuance;
     } catch (error) {
+      const err=error as Error;
       console.error('❌ Failed to issue carbon credits:', error);
-      throw new Error(`Credit issuance failed: ${error.message}`);
+      throw new Error(`Credit issuance failed: ${err.message}`);
     }
   }
 
@@ -212,8 +214,9 @@ export class AvalancheService {
       
       return creditRetirement;
     } catch (error) {
+      const err=error as Error;
       console.error('❌ Failed to retire carbon credits:', error);
-      throw new Error(`Credit retirement failed: ${error.message}`);
+      throw new Error(`Credit retirement failed: ${err.message}`);
     }
   }
 
@@ -335,8 +338,9 @@ export class AvalancheService {
       
       return signature;
     } catch (error) {
+      const err=error as Error;
       console.error('❌ Failed to sign MRV submission:', error);
-      throw new Error(`Signing failed: ${error.message}`);
+      throw new Error(`Signing failed: ${err.message}`);
     }
   }
 
@@ -368,8 +372,9 @@ export class AvalancheService {
 
       return transaction;
     } catch (error) {
+      const err=error as Error;
       console.error('❌ Failed to submit retirement transaction:', error);
-      throw new Error(`Retirement transaction failed: ${error.message}`);
+      throw new Error(`Retirement transaction failed: ${err.message}`);
     }
   }
 }

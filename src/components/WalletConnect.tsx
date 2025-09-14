@@ -123,7 +123,7 @@ export function WalletConnect({
         method: 'eth_chainId',
       });
 
-      const balanceInEth = parseFloat(parseInt(balance, 16) / 1e18).toFixed(4);
+      const balanceInEth = (parseInt(balance, 16) / 1e18).toFixed(4);
       const networkName = parseInt(chainId, 16) === 43113 ? 'Fuji Testnet' : 
                           parseInt(chainId, 16) === 43114 ? 'Avalanche Mainnet' : 'Unknown';
 

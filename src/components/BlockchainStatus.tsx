@@ -4,8 +4,7 @@ import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Link, Shield, ExternalLink, Activity } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
-
+import { toast } from 'sonner';
 interface BlockchainStatusProps {
   variant?: 'badge' | 'card' | 'footer';
   showDetails?: boolean;

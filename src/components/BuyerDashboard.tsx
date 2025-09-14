@@ -12,7 +12,7 @@ import { Progress } from './ui/progress';
 import { projectId } from '../utils/supabase/info';
 import { supabase } from '../utils/supabase/client';
 import { ShoppingCart, Award, TrendingUp, Leaf, ExternalLink, Calendar, MapPin, CreditCard, FileText } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { WalletConnect } from './WalletConnect';
 
 interface User {
@@ -59,6 +59,7 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
   const [showRetirementDialog, setShowRetirementDialog] = useState(false);
   const [retirementReason, setRetirementReason] = useState('');
   const [retirements, setRetirements] = useState<Retirement[]>([]);
+  const [purchaseAmount, setPurchaseAmount] = useState(1);
 
   useEffect(() => {
     fetchAvailableCredits();
@@ -114,7 +115,7 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
   };
 
   const handlePurchase = async () => {
-    if (!selectedCredit) return;
+    if (!selectedCredit || purchaseAmount < 1 || purchaseAmount > selectedCredit.amount) return;
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -127,7 +128,8 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
           'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          creditId: selectedCredit.id
+          creditId: selectedCredit.id,
+          amount: purchaseAmount
         })
       });
 
@@ -136,7 +138,7 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
         throw new Error(error.error || 'Failed to purchase credit');
       }
 
-      toast.success(`Successfully purchased ${selectedCredit.amount} tCO₂e credits!`);
+      toast.success(`Successfully purchased ${purchaseAmount} tCO₂e credits!`);
       setShowPurchaseDialog(false);
       setSelectedCredit(null);
       
@@ -144,8 +146,9 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
       fetchAvailableCredits();
       fetchOwnedCredits();
     } catch (error) {
-      console.error('Error purchasing credits:', error);
-      toast.error(`Failed to purchase credits: ${error.message}`);
+      const err = error as Error;
+      console.error('Error purchasing credits:', err.message);
+      toast.error(`Failed to purchase credits: ${err.message}`);
     }
   };
 
@@ -184,13 +187,15 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
       setRetirementReason('');
       setSelectedCredit(null);
     } catch (error) {
-      console.error('Error retiring credits:', error);
-      toast.error(`Failed to retire credits: ${error.message}`);
+      const err=error as Error;
+      console.error('Error retiring credits:', err.message);
+      toast.error(`Failed to retire credits: ${err.message}`);
     }
   };
 
   const openPurchaseDialog = (credit: CarbonCredit) => {
     setSelectedCredit(credit);
+    setPurchaseAmount(1);
     setShowPurchaseDialog(true);
   };
 
@@ -262,7 +267,9 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-700">
-              {ownedCredits.reduce((sum, credit) => sum + credit.amount, 0).toLocaleString()} tCO₂e
+              {ownedCredits && ownedCredits.length > 0
+                ? ownedCredits.reduce((sum, credit) => sum + (typeof credit.amount === 'number' ? credit.amount : 0), 0).toLocaleString()
+                : '0'} tCO₂e
             </div>
             <p className="text-xs text-green-600 mt-1">
               Available for retirement
@@ -277,7 +284,9 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-700">
-              {availableCredits.reduce((sum, credit) => sum + credit.amount, 0).toLocaleString()}
+              {availableCredits && availableCredits.length > 0
+                ? availableCredits.reduce((sum, credit) => sum + (typeof credit.amount === 'number' ? credit.amount : 0), 0).toLocaleString()
+                : '0'}
             </div>
             <p className="text-xs text-blue-600 mt-1">
               tCO₂e in marketplace
@@ -307,7 +316,9 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-teal-700">
-              {retirements.reduce((sum, retirement) => sum + retirement.amount, 0).toLocaleString()}
+              {retirements && retirements.length > 0
+                ? retirements.reduce((sum, retirement) => sum + (typeof retirement.amount === 'number' ? retirement.amount : 0), 0).toLocaleString()
+                : '0'}
             </div>
             <p className="text-xs text-teal-600 mt-1">
               Your offset impact
@@ -334,7 +345,7 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {availableCredits.map((credit) => (
-                <Card key={credit.id} className="hover:shadow-lg transition-shadow">
+                <Card key={credit.id || Math.random()} className="hover:shadow-lg transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">Project {credit.projectId.slice(-8)}</CardTitle>
@@ -347,7 +358,7 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
                   <CardContent className="space-y-4">
                     <div className="text-center">
                       <div className="text-3xl font-bold text-blue-700">
-                        {credit.amount.toLocaleString()}
+                        {typeof credit.amount === 'number' ? credit.amount.toLocaleString() : 'N/A'}
                       </div>
                       <p className="text-sm text-gray-600">tCO₂e Available</p>
                     </div>
@@ -409,7 +420,7 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {ownedCredits.map((credit) => (
-                <Card key={credit.id} className="hover:shadow-lg transition-shadow border-green-200">
+                <Card key={credit.id || Math.random()} className="hover:shadow-lg transition-shadow border-green-200">
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">Project {credit.projectId.slice(-8)}</CardTitle>
@@ -421,7 +432,7 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
                   <CardContent className="space-y-4">
                     <div className="text-center">
                       <div className="text-3xl font-bold text-green-700">
-                        {credit.amount.toLocaleString()}
+                        {typeof credit.amount === 'number' ? credit.amount.toLocaleString() : 'N/A'}
                       </div>
                       <p className="text-sm text-gray-600">tCO₂e Owned</p>
                     </div>
@@ -473,11 +484,11 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
           <CardContent>
             <div className="space-y-4">
               {retirements.map((retirement) => (
-                <div key={retirement.id} className="border rounded-lg p-4 bg-green-50">
+                <div key={retirement.id || Math.random()} className="border rounded-lg p-4 bg-green-50">
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-semibold text-lg">
-                        {retirement.amount.toLocaleString()} tCO₂e Retired
+                        {typeof retirement.amount === 'number' ? retirement.amount.toLocaleString() : 'N/A'} tCO₂e Retired
                       </h3>
                       <p className="text-sm text-gray-600 mt-1">{retirement.reason}</p>
                       <p className="text-xs text-gray-500 mt-2">
@@ -522,29 +533,37 @@ export function BuyerDashboard({ user }: BuyerDashboardProps) {
                   </div>
                   <div>
                     <p className="text-gray-600">Quality Score</p>
-                    <p className={`font-semibold ${getHealthScoreColor(selectedCredit.healthScore)}`}>
-                      {(selectedCredit.healthScore * 100).toFixed(1)}%
-                    </p>
+                    <p className={`font-semibold ${getHealthScoreColor(selectedCredit.healthScore)}`}>{(selectedCredit.healthScore * 100).toFixed(1)}%</p>
                   </div>
                 </div>
               </div>
-
-
+              <div>
+                <label htmlFor="purchaseAmount" className="block text-sm font-medium text-gray-700 mb-1">Select Amount to Purchase</label>
+                <input
+                  id="purchaseAmount"
+                  type="number"
+                  min={1}
+                  max={selectedCredit.amount}
+                  value={purchaseAmount}
+                  onChange={e => setPurchaseAmount(Number(e.target.value))}
+                  className="w-full border rounded px-3 py-2"
+                />
+                <p className="text-xs text-gray-500 mt-1">Max: {selectedCredit.amount.toLocaleString()} tCO₂e</p>
+              </div>
               <div className="bg-yellow-50 rounded-lg p-4 text-sm">
                 <p className="font-medium text-yellow-800">Purchase Summary</p>
                 <p className="text-yellow-700 mt-1">
-                  Purchasing {selectedCredit.amount.toLocaleString()} tCO₂e credits
+                  Purchasing {purchaseAmount.toLocaleString()} tCO₂e credits
                 </p>
                 <p className="text-yellow-700">
-                  Estimated cost: ${(selectedCredit.amount * 15).toLocaleString()} USD
+                  Estimated cost: ${(purchaseAmount * 15).toLocaleString()} USD
                 </p>
               </div>
-
               <div className="flex justify-end space-x-2 pt-4">
                 <Button variant="outline" onClick={() => setShowPurchaseDialog(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handlePurchase}>
+                <Button onClick={handlePurchase} disabled={purchaseAmount < 1 || purchaseAmount > selectedCredit.amount}>
                   <CreditCard className="h-4 w-4 mr-2" />
                   Purchase Credits
                 </Button>
